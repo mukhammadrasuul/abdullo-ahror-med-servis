@@ -128,7 +128,7 @@
     </style>
 </head>
 
-<body onfocus="window.close()">
+<body onload="setTimeout(function() { window.print(); }, 500)" onafterprint="window.close()">
     <div class="report-container">
         <div class="report-header">
             Kunlik moliyaviy hisobot
@@ -304,11 +304,7 @@
             document.getElementById('jamichiqim').textContent = numberFormat(jamichiqim);
             document.getElementById('kassadaqolganpul').textContent = numberFormat(kassadaqolganpul);
 
-            // Print on load just like PHP version's <body onload="window.print()">
-            // Use setTimeout to ensure browsers have rendered the exact DOM updates before printing
-            setTimeout(function () {
-                window.print();
-            }, 500);
+            // Note: Printing is now handled by onload and onafterprint on the body tag.
         });
     </script>
 </body>
