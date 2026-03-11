@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: white;
+        }
+
+        .report-container {
+            width: 210mm;
+            /* A4 width */
+            min-height: 297mm;
+            /* A4 height */
+            margin: 0 auto;
+            padding: 10mm;
+            box-sizing: border-box;
+        }
+
+        .report-header {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .report-table {
+            text-align: left;
+            margin-bottom: 10px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .date-section {
+            text-align: right;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+
+        th,
+        td {
+            border: 1px solid #000;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+
+        .summary-table {
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        .summary-table th,
+        .summary-table td {
+            background-color: #e0e0e0;
+            font-weight: bold;
+            text-align: center;
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .total-row td {
+            background-color: #d0d0d0;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .table-container {
+            display: block;
+            margin-bottom: 30px;
+        }
+
+        .table-column {
+            width: 100%;
+            margin-bottom: 30px;
+        }
+
+        .table-column table {
+            width: 100%;
+            margin-bottom: 0;
+            table-layout: fixed;
+        }
+
+        .table-column th:first-child {
+            width: 70%;
+        }
+
+        .table-column th:last-child {
+            width: 30%;
+        }
+
+        /* Make sure tables stay properly sized */
+        .table-column td,
+        .table-column th {
+            word-break: break-word;
+        }
+
+        /* Ensure proper A4 scaling */
+        @media print {
+            .table-container {
+                page-break-inside: avoid;
+            }
+
+            /* Make sure summary table also doesn't break across pages */
+            .summary-table {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+
+<body onfocus="window.close()">
+    <div class="report-container">
+        <div class="report-header">
+            Kunlik moliyaviy hisobot
+        </div>
+
+        <div class="date-section">
+            Hisobot berilayotgan sana: <span id="report-date"></span>
+        </div>
+
+        <div class="table-container">
+            <!-- Kirim (Income) Table -->
+            <div class="table-column">
+                <div class="report-table"> Kirim </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Bemor ism-sharifi</th>
+                            <th>Summasi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="kirim-body">
+                        <!-- Dynamic Content -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Chiqim (Expense) Table -->
+            <div class="table-column">
+                <div class="report-table">Chiqim</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Chiqim nomi</th>
+                            <th>Summasi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="chiqim-body">
+                        <!-- Dynamic Content -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Summary table - full width at bottom -->
+        <table class="summary-table">
+            <thead>
+                <tr>
+                    <th>So'm</th>
+                    <th>Plastik</th>
+                    <th>Click</th>
+                    <th>Dollar</th>
+                    <th>Chiqim</th>
+                    <th>Kassada qolgan pul</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td id="sum">0</td>
+                    <td id="card">0</td>
+                    <td id="click">0</td>
+                    <td id="dollar">0</td>
+                    <td id="jamichiqim">0</td>
+                    <td id="kassadaqolganpul">0</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="footer">
+            Hisobot yaratilgan sana: <span id="created-date"></span>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Helper function to safely handle comma-separated values from URL
+            function safeExplode(key) {
+                const params = new URLSearchParams(window.location.search);
+                const value = params.get(key);
+                if (!value) return [];
+                return value.split(',').map(item => item.trim());
+            }
+
+            // Helper function to get a single value from URL
+            function safeGetValue(key, isNumber = false) {
+                const params = new URLSearchParams(window.location.search);
+                const value = params.get(key);
+                if (!value) return isNumber ? 0 : '';
+                return isNumber ? parseFloat(value) : value;
+            }
+
+            // Number formatting function similar to PHP number_format($value, 0, '', ',')
+            function numberFormat(number) {
+                if (isNaN(number)) return "0";
+                return new Intl.NumberFormat('en-US').format(Math.floor(number));
+            }
+
+            // Get all values
+            const sana = safeGetValue("sana");
+            const ism = safeExplode("ism");
+            const kirimsumma = safeExplode("kirimsumma");
+            const chiqim = safeExplode("chiqim");
+            const chiqimsumma = safeExplode("chiqimsumma");
+            const sum = safeGetValue("sum", true);
+            const jamichiqim = safeGetValue("jamichiqim", true);
+            const card = safeGetValue("card", true);
+            const click = safeGetValue("click", true);
+            const dollar = safeGetValue("dollar", true);
+            const kassadaqolganpul = safeGetValue("kassadaqolganpul", true);
+
+            // Populate Date
+            document.getElementById('report-date').textContent = sana;
+
+            // Populate Created Date (Current Date/Time)
+            const now = new Date();
+            const createdDateStr = now.getFullYear() + '-' +
+                String(now.getMonth() + 1).padStart(2, '0') + '-' +
+                String(now.getDate()).padStart(2, '0') + ' ' +
+                String(now.getHours()).padStart(2, '0') + ':' +
+                String(now.getMinutes()).padStart(2, '0') + ':' +
+                String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('created-date').textContent = createdDateStr;
+
+            // Process Kirim
+            const kirimBody = document.getElementById('kirim-body');
+            for (let i = 0; i < ism.length; i++) {
+                const currentKirimSumma = (i < kirimsumma.length) ? parseFloat(kirimsumma[i]) : 0;
+
+                // Skip if kirimsumma is 0 (NaN is also treated as 0 logic wise here)
+                if (currentKirimSumma === 0 || isNaN(currentKirimSumma)) {
+                    continue;
+                }
+
+                const currentIsm = ism[i] || '';
+
+                const tr = document.createElement('tr');
+                const tdIsm = document.createElement('td');
+                tdIsm.textContent = currentIsm;
+
+                const tdSumma = document.createElement('td');
+                tdSumma.textContent = numberFormat(currentKirimSumma);
+
+                tr.appendChild(tdIsm);
+                tr.appendChild(tdSumma);
+                kirimBody.appendChild(tr);
+            }
+
+            // Process Chiqim
+            const chiqimBody = document.getElementById('chiqim-body');
+            const actualChiqimCount = Math.min(chiqim.length, chiqimsumma.length);
+            for (let i = 0; i < actualChiqimCount; i++) {
+                if (chiqim[i] !== "" && chiqimsumma[i] !== "") {
+                    const currentChiqim = chiqim[i];
+                    const currentChiqimSumma = parseFloat(chiqimsumma[i]) || 0;
+
+                    const tr = document.createElement('tr');
+                    const tdChiqim = document.createElement('td');
+                    tdChiqim.textContent = currentChiqim;
+
+                    const tdSumma = document.createElement('td');
+                    tdSumma.textContent = numberFormat(currentChiqimSumma);
+
+                    tr.appendChild(tdChiqim);
+                    tr.appendChild(tdSumma);
+                    chiqimBody.appendChild(tr);
+                }
+            }
+
+            // Process Summary Table
+            document.getElementById('sum').textContent = numberFormat(sum);
+            document.getElementById('card').textContent = numberFormat(card);
+            document.getElementById('click').textContent = numberFormat(click);
+            document.getElementById('dollar').textContent = numberFormat(dollar);
+            document.getElementById('jamichiqim').textContent = numberFormat(jamichiqim);
+            document.getElementById('kassadaqolganpul').textContent = numberFormat(kassadaqolganpul);
+
+            // Print on load just like PHP version's <body onload="window.print()">
+            // Use setTimeout to ensure browsers have rendered the exact DOM updates before printing
+            setTimeout(function () {
+                window.print();
+            }, 500);
+        });
+    </script>
+</body>
+
+</html>
